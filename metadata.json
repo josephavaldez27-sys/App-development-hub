@@ -1,0 +1,7 @@
+{
+  "name": "Hokkaido: Snow & Peak Forecast",
+  "description": "A traditional Japanese-inspired snow forecast tracker for Hokkaido ski resorts, featuring real-time search grounding and traffic data from Sapporo.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
