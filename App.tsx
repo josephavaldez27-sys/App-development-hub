@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import NeonHeader from './components/TraditionalHeader';
+import TraditionalHeader from './components/TraditionalHeader';
 import ResortCard from './components/ResortCard';
 import { Resort, ResortInfo } from './types';
 import { fetchAllResortsData } from './services/geminiService';
@@ -33,7 +33,7 @@ const App: React.FC = () => {
       setResorts(results);
     } catch (err: any) {
       console.error("Failed to fetch snow data:", err);
-      setError("COMMUNICATION_ERROR: ALLEYWAY_SIGNAL_LOST_IN_BLIZZARD");
+      setError("接続に失敗しました。天候を確認してください。");
     } finally {
       setLoading(false);
     }
@@ -49,100 +49,100 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-32 px-4 relative">
-      <NeonHeader />
+    <div className="max-w-6xl mx-auto pb-48 px-4 relative">
+      <TraditionalHeader />
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-40">
-          <div className="relative w-40 h-40 flex items-center justify-center">
-             {/* Spinning Neon Rings */}
-             <div className="absolute inset-0 border-2 border-neon-pink rounded-full border-t-transparent animate-spin"></div>
-             <div className="absolute inset-4 border-2 border-neon-cyan rounded-full border-b-transparent animate-reverse-spin"></div>
-             
-             <div className="text-4xl neon-text-cyan font-black">SCAN</div>
+        <div className="flex flex-col items-center justify-center py-60 animate-clean">
+          <div className="relative mb-12">
+            <div className="w-20 h-20 border-[1px] border-indigo-900/10 rounded-full flex items-center justify-center">
+               <div className="w-12 h-12 border border-transparent border-t-[#e60012] rounded-full animate-spin"></div>
+            </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hanko-stamp text-xs bg-white">
+              待
+            </div>
           </div>
-          <div className="mt-12 text-center">
-             <h3 className="text-4xl font-black italic neon-text-pink tracking-widest mb-2 flicker">BOOTING_TERMINAL</h3>
-             <p className="font-mono text-xs text-gray-500 tracking-[0.6em] uppercase">Connecting to Hokkaido Snow Grid...</p>
-             <div className="flex gap-2 justify-center mt-6">
-                <div className="w-2 h-2 bg-neon-cyan animate-pulse"></div>
-                <div className="w-2 h-2 bg-neon-pink animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                <div className="w-2 h-2 bg-neon-yellow animate-pulse" style={{animationDelay: '0.4s'}}></div>
-             </div>
-          </div>
-
-          <style>{`
-            @keyframes reverse-spin {
-              from { transform: rotate(360deg); }
-              to { transform: rotate(0deg); }
-            }
-            .animate-reverse-spin { animation: reverse-spin 1s linear infinite; }
-          `}</style>
+          <h3 className="text-xl font-bold text-[#1a2a3a] tracking-[0.5em] uppercase serif-font">情報を取得中</h3>
+          <p className="text-[10px] text-gray-400 mt-4 tracking-[0.3em] font-medium">SYNCHRONIZING WITH HOKKAIDO SNOW GRID</p>
         </div>
       ) : error ? (
-        <div className="bg-black/80 border-2 border-neon-pink p-12 text-center max-w-xl mx-auto shadow-[0_0_50px_rgba(255,0,255,0.2)]">
-          <p className="text-2xl mb-8 font-black neon-text-pink uppercase tracking-widest">{error}</p>
+        <div className="washi-card p-16 text-center max-w-xl mx-auto border-t-2 border-t-[#e60012] animate-clean">
+          <div className="hanko-stamp text-2xl mb-8">誤</div>
+          <p className="text-xl mb-10 font-black text-[#1a2a3a] serif-font">{error}</p>
           <button 
             onClick={loadData}
-            className="bg-neon-pink text-white px-10 py-4 rounded-none hover:bg-white hover:text-black transition-all uppercase tracking-[0.5em] font-black shadow-[0_0_20px_rgba(255,0,255,0.5)]"
+            className="bg-[#1a2a3a] text-white px-10 py-3 font-bold hover:bg-[#e60012] transition-all uppercase text-[10px] tracking-[0.4em]"
           >
-            RETRY_SIGNAL
+            再試行 Retry
           </button>
         </div>
       ) : (
-        <div className="space-y-16">
-          {/* Neon Jump Menu */}
-          <div className="flex flex-wrap justify-center gap-3 mb-16">
+        <div className="space-y-16 animate-clean">
+          {/* Minimal Jump Menu - More traditional and cleaner feel */}
+          <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 mb-24 border-b border-indigo-900/5 pb-12">
             {resorts.map(r => (
               <button 
                 key={r.id}
                 onClick={() => handleSelectResort(r.id)}
-                className={`px-5 py-2 text-[10px] font-mono uppercase tracking-[0.3em] border transition-all ${selectedResortId === r.id ? 'bg-neon-cyan text-black border-neon-cyan shadow-[0_0_15px_rgba(0,255,255,0.8)]' : 'bg-black/40 text-gray-500 border-gray-800 hover:border-neon-cyan hover:text-neon-cyan'}`}
+                className={`group flex flex-col items-center gap-1 transition-all ${selectedResortId === r.id ? 'scale-105' : 'hover:scale-105'}`}
               >
-                {r.name.split(' ')[0]} {r.forecast[0]?.snowDepth > 6 ? '⚡' : ''}
+                <span className={`text-[9px] font-bold tracking-widest transition-colors ${selectedResortId === r.id ? 'text-[#e60012]' : 'text-gray-300'}`}>
+                  {r.name.split(' ')[0]}
+                </span>
+                <span className={`text-base font-black serif-font transition-colors ${selectedResortId === r.id ? 'text-[#1a2a3a]' : 'text-indigo-900/20'}`}>
+                  {r.kanjiName.slice(0, 2)}
+                </span>
+                <div className={`h-[1px] w-0 group-hover:w-full transition-all duration-500 ${selectedResortId === r.id ? 'w-full bg-[#e60012]' : 'bg-[#1a2a3a]/10'}`}></div>
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-12 animate-in fade-in duration-1000">
+          <div className="grid grid-cols-1 gap-20">
             {resorts.map(resort => (
               <div 
                 key={resort.id} 
                 ref={el => resortRefs.current[resort.id] = el}
-                className="transition-all duration-500"
+                className="transition-all duration-1000"
               >
                 <ResortCard resort={resort} />
               </div>
             ))}
           </div>
 
-          <div className="text-center mt-32 opacity-20 hover:opacity-100 transition-opacity duration-1000">
-             <div className="inline-block p-8 border border-white/5 bg-black/40 backdrop-blur-md">
-                <p className="text-[10px] font-mono tracking-[1em] text-white uppercase mb-4">END_OF_TRANSMISSION</p>
-                <p className="font-black italic text-neon-pink text-3xl">STAY_FROSTY</p>
-                <div className="flex justify-center gap-6 mt-6">
-                   <div className="w-4 h-1 bg-neon-cyan"></div>
-                   <div className="w-4 h-1 bg-neon-pink"></div>
-                   <div className="w-4 h-1 bg-neon-yellow"></div>
+          <div className="text-center mt-64 border-t border-indigo-900/5 pt-32 relative overflow-hidden">
+             {/* Clean wave pattern only at the footer area */}
+             <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none pattern-seigaiha-faint"></div>
+             
+             <div className="relative z-10 inline-block px-12 py-10">
+                <p className="text-[10px] font-bold tracking-[2em] text-gray-200 uppercase mb-10 ml-[2em]">結</p>
+                <p className="font-black text-[#1a2a3a] text-4xl serif-font tracking-[0.3em] mb-6">道中ご無事で</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.6em] serif-font italic opacity-60">A Safe Journey to You</p>
+                
+                <div className="flex justify-center gap-10 mt-16 opacity-20">
+                   <div className="w-[1px] h-10 bg-[#1a2a3a] rotate-12"></div>
+                   <div className="w-[1px] h-10 bg-[#e60012] rotate-12"></div>
+                   <div className="w-[1px] h-10 bg-[#c5a059] rotate-12"></div>
                 </div>
              </div>
           </div>
         </div>
       )}
 
-      {/* Persistent Alleyway Decor */}
-      <div className="fixed top-0 left-0 h-full w-24 bg-gradient-to-r from-black to-transparent pointer-events-none opacity-50"></div>
-      <div className="fixed top-0 right-0 h-full w-24 bg-gradient-to-l from-black to-transparent pointer-events-none opacity-50"></div>
+      {/* Frame Decor - Clean and subtle */}
+      <div className="fixed inset-8 border border-indigo-900/[0.02] pointer-events-none z-[-1]"></div>
 
-      {/* Refresh Button as a Floating Neon Switch */}
+      {/* Traditional Floating Refresh Button - Simplified for clean UI */}
       <button 
         onClick={loadData}
         disabled={loading}
-        className="fixed bottom-12 right-12 w-16 h-16 rounded-full bg-black border-2 border-neon-cyan flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,255,0.8)] hover:scale-110 active:scale-95 transition-all z-50 group"
+        className="fixed bottom-12 right-12 w-14 h-14 bg-white border border-gray-100 text-[#1a2a3a] flex items-center justify-center shadow-sm hover:border-[#e60012] hover:text-[#e60012] transition-all z-50 group overflow-hidden"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 neon-text-cyan ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+        <div className="relative z-10 flex flex-col items-center">
+           <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${loading ? 'animate-spin text-[#e60012]' : 'group-hover:text-[#e60012]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+           </svg>
+           <span className="text-[8px] font-bold mt-1 serif-font opacity-0 group-hover:opacity-100 transition-opacity">更</span>
+        </div>
       </button>
     </div>
   );

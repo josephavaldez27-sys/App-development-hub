@@ -34,7 +34,6 @@ async function callWithRetry(fn: () => Promise<any>, retries = 3, delay = 1000):
 export async function fetchAllResortsData(targetResorts: Resort[]): Promise<ResortInfo[]> {
   const resortListStr = targetResorts.join(", ");
 
-  // 1. Fetch Snow and Weather data in ONE batch call to save quota
   const fetchSnowData = async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -76,51 +75,33 @@ export async function fetchAllResortsData(targetResorts: Resort[]): Promise<Reso
         }
       },
     });
-    return JSON.parse(response.text || "[]");
-  };
 
-  // 2. Fetch Distance and Travel Time data in ONE batch call
-  // NOTE: responseMimeType and responseSchema are NOT supported for googleMaps tool.
-  const fetchTravelData = async () => {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Provide driving distance (miles) and current travel time (hours/mins) from Sapporo City Center to these resorts: ${resortListStr}.
-                 Format the output strictly as a list with one line per resort:
-                 Resort: [Resort Name] | Distance: [Distance] | Time: [Time]`,
-      config: {
-        tools: [{ googleMaps: {} }],
-        toolConfig: {
-          retrievalConfig: {
-            latLng: { latitude: 43.0621, longitude: 141.3544 }
-          }
-        }
-      }
-    });
-    return response.text;
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    const sources = groundingChunks?.map((chunk: any) => ({
+      title: chunk.web?.title || "Search Source",
+      uri: chunk.web?.uri || ""
+    })).filter((s: any) => s.uri) || [];
+
+    return {
+      data: JSON.parse(response.text || "[]"),
+      sources
+    };
   };
 
   try {
-    const [snowBatch, travelRawText] = await Promise.all([
-      callWithRetry(fetchSnowData),
-      callWithRetry(fetchTravelData)
-    ]);
+    const snowBatchResult = await callWithRetry(fetchSnowData);
 
-    // Parse travel data from plain text
-    const travelLines = travelRawText?.split('\n') || [];
-    const travelBatch = travelLines
-      .filter(line => line.includes('|'))
-      .map(line => {
-        const parts = line.split('|');
-        const resortName = parts[0]?.replace('Resort:', '').trim();
-        const distance = parts[1]?.replace('Distance:', '').trim();
-        const time = parts[2]?.replace('Time:', '').trim();
-        return { resortName, distance, time };
-      });
+    const snowBatch = snowBatchResult.data;
+    const searchSources = snowBatchResult.sources;
 
     return targetResorts.map(resort => {
-      const normalizedTarget = resort.toLowerCase().split(' ')[0];
-      const snow = snowBatch.find((s: any) => s.resortName?.toLowerCase().includes(normalizedTarget)) || {};
-      const travel = travelBatch.find((t: any) => t.resortName?.toLowerCase().includes(normalizedTarget)) || {};
+      const targetLower = resort.toLowerCase();
+      const keywords = targetLower.split(' ').filter(w => w.length > 3);
+
+      const snow = snowBatch.find((s: any) => {
+        const sName = (s.resortName || "").toLowerCase();
+        return keywords.some(k => sName.includes(k)) || sName.includes(targetLower) || targetLower.includes(sName);
+      }) || {};
 
       const forecast = snow.forecast || Array.from({ length: 7 }).map((_, i) => ({
         date: `Day ${i + 1}`,
@@ -138,15 +119,12 @@ export async function fetchAllResortsData(targetResorts: Resort[]): Promise<Reso
         baseDepth: snow.currentBaseDepth || 0,
         forecast,
         totalAccumulation: forecast.reduce((acc: number, day: any) => acc + (day.snowDepth || 0), 0),
-        distanceFromNakajima: travel.distance || "Distance unknown",
-        travelTime: travel.time || "Time unknown",
-        sources: [], 
+        sources: searchSources.slice(0, 5),
         coords: RESORT_COORDS[resort]
       };
     });
   } catch (error) {
     console.error("Critical error in batch fetch:", error);
-    // Fallback to minimal data for all requested resorts if batching fails
     return targetResorts.map(resort => ({
       id: resort.toLowerCase().replace(/\s+/g, '-'),
       name: resort,
@@ -161,8 +139,6 @@ export async function fetchAllResortsData(targetResorts: Resort[]): Promise<Reso
         lowTemp: 0
       })),
       totalAccumulation: 0,
-      distanceFromNakajima: "Unknown",
-      travelTime: "Unknown",
       sources: [],
       coords: RESORT_COORDS[resort]
     }));

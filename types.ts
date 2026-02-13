@@ -14,8 +14,6 @@ export interface ResortInfo {
   forecast: ForecastDay[];
   baseDepth: number; // Current total snow on ground in inches
   totalAccumulation: number; // 7-day forecasted total in inches
-  distanceFromNakajima: string;
-  travelTime: string;
   description: string;
   sources: { title: string; uri: string }[];
   coords: { x: number; y: number }; // Percentage coordinates for SVG map
